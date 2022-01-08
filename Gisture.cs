@@ -24,13 +24,13 @@ namespace Gisture
         [LoadColumn(6)]
         public float IndexMiddle { get; set; }
 
-        [LoadColumn(14),ColumnName("Label")]
-        public int Kind { get; set; }
+        [LoadColumn(14), ColumnName("Label")]
+        public float Kind { get; set; }
     }
-	class DataPoint
-	{
-		public int Kind { get; set; }
-		[VectorType(50)]
-		public float[]? Features { get; set; }
-	}
+    class DataPoint
+    {
+        public float Label { get; set; }
+        [VectorType(50)]
+        public float[]? Features { get; set; }
+    }
 }
