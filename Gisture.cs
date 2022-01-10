@@ -27,7 +27,7 @@ namespace Gisture
         [LoadColumn(14), ColumnName("Label")]
         public int Kind { get; set; }
     }
-    internal class  DataPoint
+    internal class DataPoint
     {
         public bool Label { get; set; }
 

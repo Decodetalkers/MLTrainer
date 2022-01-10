@@ -91,7 +91,7 @@ namespace Gisture
                             reuseRowObject: false).ToList()[0];
                 if (predict.PredictedLabel)
                 {
-                    return i+1;
+                    return i + 1;
                 }
             }
             return 0;
