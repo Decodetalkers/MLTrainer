@@ -25,12 +25,25 @@ namespace Gisture
         public float IndexMiddle { get; set; }
 
         [LoadColumn(14), ColumnName("Label")]
-        public float Kind { get; set; }
+        public int Kind { get; set; }
     }
+
     class DataPoint
     {
-        public float Label { get; set; }
-        [VectorType(50)]
-        public float[]? Features { get; set; }
+        public bool Label { get; set; }
+
+        public float ThumbAngle { get; set; }
+
+        public float IndexAngle { get; set; }
+
+        public float MiddleAngle { get; set; }
+
+        public float RingAngle { get; set; }
+
+        public float PinkyAngle { get; set; }
+
+        public float ThumbIndex { get; set; }
+
+        public float IndexMiddle { get; set; }
     }
 }

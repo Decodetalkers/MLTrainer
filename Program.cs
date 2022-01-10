@@ -1,7 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more info
 using Microsoft.ML;
 using Microsoft.ML.Data;
-//using Microsoft.ML.Trainers;
+using Microsoft.ML.Trainers;
 //using System;
 //using System.Linq;
 //using System.Collections.Generic;
@@ -16,56 +16,78 @@ namespace Gisture
 
             var middle_data = context.Data
                 .CreateEnumerable<GistureData>(data, reuseRowObject: false);
-
             var final_data = Convert_to_DataPoints(middle_data);
-            var finnal_data = context.Data.LoadFromEnumerable(final_data);
-            var pipeline = context.Transforms.Concatenate("Features", new[] { "ThumbIndex", "IndexAngle", "MiddleAngle", "RingAngle", "PinkyAngle", "ThumbIndex", "IndexMiddle" })
-                .Append(context.Regression.Trainers.Sdca(labelColumnName: "Label", maximumNumberOfIterations: 10));
-            var model = pipeline.Fit(data);
-            var eight = new GistureData()
+            var data2 = context.Data.LoadFromTextFile<GistureData>("./csvs/persion1.csv", hasHeader: false, separatorChar: ',');//IdataView?
+
+            var middle_data2 = context.Data
+                .CreateEnumerable<GistureData>(data2, reuseRowObject: false);
+            var final_data2 = Convert_to_DataPoints(middle_data2);
+            
+			var options = new LinearSvmTrainer.Options
             {
-                ThumbAngle = 38.1197f,
-                IndexAngle = 90.39656f,
-                MiddleAngle = -26.1411f,
-                RingAngle = -35.6065f,
-                PinkyAngle = -32.2617f,
-                ThumbIndex = -71.2519f,
-                IndexMiddle = -0.614772f,
+                LabelColumnName = "Label",
+                BatchSize = 10,
+                PerformProjection = true,
+                NumberOfIterations = 10,
             };
-            var kind = context.Model.CreatePredictionEngine<GistureData, Prediction>(model).Predict(eight);
-            Console.WriteLine(kind.Kind);
-            foreach (var item in middle_data)
+            var pipeline = context.Transforms.Concatenate("Features", new[] { "ThumbIndex", "IndexAngle", "MiddleAngle", "RingAngle", "PinkyAngle", "ThumbIndex", "IndexMiddle" })
+                .Append(context.BinaryClassification.Trainers.LinearSvm(options));
+            var model = pipeline.Fit(final_data);
+            var transform_predicts = model.Transform(final_data2);
+            var predicts = context.Data
+                .CreateEnumerable<Prediction>(transform_predicts,
+                reuseRowObject: false).ToList();
+
+            foreach (var item in predicts)
             {
-                var kind2 = context.Model.CreatePredictionEngine<GistureData, Prediction>(model).Predict(item);
-                Console.WriteLine($"{kind2.Kind},{item.Kind}");
+                Console.WriteLine($"{item.Label},{item.PredictedLabel}");
             }
+			var metrics = context.BinaryClassification
+				.EvaluateNonCalibrated(transform_predicts);
+			PrintMetrics(metrics);
 
         }
         public class Prediction
         {
-            [ColumnName("Score")]
-            public float Kind { get; set; }
+            public bool Label { get; set; }
+            public bool PredictedLabel { get; set; }
         }
-        private static IEnumerable<DataPoint> Convert_to_DataPoints(IEnumerable<GistureData> input)
-
+        private static IDataView Convert_to_DataPoints(IEnumerable<GistureData> input)
         {
-            foreach (var item in input)
+            IEnumerable<DataPoint> Middle(IEnumerable<GistureData> input)
             {
-                yield return new DataPoint
+                foreach (var item in input)
                 {
-                    Label = item.Kind,
-                    Features = new float[7] {
-                        item.RingAngle,
-                        item.IndexAngle,
-                        item.MiddleAngle,
-                        item.RingAngle,
-                        item.PinkyAngle,
-                        item.ThumbIndex,
-                        item.IndexMiddle
-                    },
-                };
-            }
+                    yield return new DataPoint
+                    {
+                        Label = item.Kind == 1,
+                        ThumbAngle = item.ThumbAngle,
+                        IndexAngle = item.IndexAngle,
+                        MiddleAngle = item.MiddleAngle,
+                        RingAngle = item.RingAngle,
+                        PinkyAngle = item.PinkyAngle,
+                        ThumbIndex = item.ThumbIndex,
+                        IndexMiddle = item.IndexMiddle,
+                    };
+                }
+            };
+			var context = new MLContext();
+            return context.Data.LoadFromEnumerable(Middle(input));
+        }
+		private static void PrintMetrics(BinaryClassificationMetrics metrics)
+        {
+            Console.WriteLine($"Accuracy: {metrics.Accuracy:F2}");
+            Console.WriteLine($"AUC: {metrics.AreaUnderRocCurve:F2}");
+            Console.WriteLine($"F1 Score: {metrics.F1Score:F2}");
+            Console.WriteLine($"Negative Precision: " +
+                $"{metrics.NegativePrecision:F2}");
+
+            Console.WriteLine($"Negative Recall: {metrics.NegativeRecall:F2}");
+            Console.WriteLine($"Positive Precision: " +
+                $"{metrics.PositivePrecision:F2}");
+
+            Console.WriteLine($"Positive Recall: {metrics.PositiveRecall:F2}\n");
+            Console.WriteLine(metrics.ConfusionMatrix.GetFormattedConfusionTable());
         }
     }
-
 }
