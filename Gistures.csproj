@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
@@ -9,6 +8,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.ML" Version="1.7.0" />
-  </ItemGroup>
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="csvs/*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
 </Project>
